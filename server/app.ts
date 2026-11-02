@@ -20,6 +20,7 @@ export interface ServerOptions {
   aiConfigFile?: string;   // 可选：config/ai.local.json
   fetchImpl?: FetchLike;   // 桌面版传入 Electron net.fetch（遵循系统代理）
   log?: (msg: string) => void;
+  demo?: boolean;          // 录制演示用的调试接口
 }
 
 export interface RunningServer {
@@ -57,7 +58,7 @@ export function startServer(o: ServerOptions): Promise<RunningServer> {
   const keys = new KeyStore(join(o.dataDir, '.secret.key'));
   const rt = new Runtime(db, keys, new LlmClient(o.fetchImpl));
   if (o.aiConfigFile) importAiConfig(rt, db, o.aiConfigFile, log);
-  const api = createApi(rt, db);
+  const api = createApi(rt, db, { demo: o.demo });
 
   const app = express();
   app.use(express.json({ limit: '1mb' }));

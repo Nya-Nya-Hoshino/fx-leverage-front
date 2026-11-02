@@ -13,6 +13,7 @@ const srv = await startServer({
   port: Number(process.env.FXSIM_PORT ?? 8787),
   host: process.env.FXSIM_HOST ?? '127.0.0.1',
   aiConfigFile: join(ROOT, 'config', 'ai.local.json'),
+  demo: process.env.FXSIM_DEMO === '1',
 });
 console.log(`\n  杠杆战线 FX Leverage Front 服务已启动： ${srv.url}`);
 console.log(`  数据目录：${process.env.FXSIM_DATA ?? join(ROOT, 'data')}`);

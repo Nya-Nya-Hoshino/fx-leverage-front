@@ -7,6 +7,7 @@ import type { Runtime } from './runtime';
 import type { GameStore } from './store';
 import { LOAN_PLANS, PLAN_NAME, repayable } from './core/loans';
 import { isMarketOpen } from './core/clock';
+import { CB_NAME, intervention } from './core/economy';
 
 export interface ApiRequest {
   method: string;
@@ -61,7 +62,7 @@ export const ProfileBody = z.object({
   extraBody: z.string().max(2000).default('').refine((s) => { if (!s.trim()) return true; try { const j = JSON.parse(s); return !!j && typeof j === 'object' && !Array.isArray(j); } catch { return false; } }, 'extraBody 必须是 JSON 对象'),
 });
 
-export function createApi(rt: Runtime, store: GameStore) {
+export function createApi(rt: Runtime, store: GameStore, opts: { demo?: boolean } = {}) {
   const routes: { method: string; pattern: RegExp; keys: string[]; fn: Handler }[] = [];
   const add = (method: string, path: string, fn: Handler) => {
     const keys: string[] = [];
@@ -211,6 +212,26 @@ export function createApi(rt: Runtime, store: GameStore) {
   add('POST', '/api/ai/profiles', (req) => ({ ok: true, id: rt.saveProfile(ProfileBody.parse(req.body)) }));
   add('DELETE', '/api/ai/profiles/:id', (_r, p) => { store.deleteProfile(p.id); return { ok: true }; });
   add('POST', '/api/ai/profiles/:id/test', (_r, p) => rt.testProfile(p.id));
+
+  // ---------- 演示/录制专用（仅 FXSIM_DEMO=1 时启用） ----------
+  if (opts.demo) {
+    add('POST', '/api/debug/breaking', (req) => {
+      const g = game();
+      const b = z.object({ kind: z.enum(['intervention', 'hawk']), ccy: z.enum(['USD', 'JPY', 'EUR', 'GBP', 'AUD']).default('USD'), size: z.number().min(0.0005).max(0.08).default(0.004) }).parse(req.body);
+      const ev = b.kind === 'intervention'
+        ? intervention(g.t, g.rng, g.st.marketSettings, (p) => g.nextId(p))
+        : {
+          news: {
+            id: g.nextId('n'), t: g.t, kind: 'breaking' as const, importance: 3 as const, ccys: [b.ccy], source: 'local' as const,
+            title: { zh: `【突发】${CB_NAME[b.ccy].zh}主席暗示将加快加息步伐`, ja: `【速報】${CB_NAME[b.ccy].ja}議長、利上げ加速を示唆` },
+            body: { zh: '讲话大幅超出市场预期，交易员迅速重新定价利率路径。', ja: '発言は市場予想を大きく上回り、トレーダーは金利見通しを急速に織り込み直している。' },
+          },
+          shocks: [{ ccy: b.ccy, size: b.size, immediate: 0.7, duration: 300, vol: 1, spread: 4 }],
+        };
+      g.applyBreaking(ev);
+      return after({ ok: true });
+    });
+  }
 
   /** 处理一个请求；返回 [HTTP 状态码, JSON] */
   async function handle(req: ApiRequest): Promise<[number, unknown]> {

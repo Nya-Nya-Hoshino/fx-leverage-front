@@ -374,7 +374,7 @@ export function maybeBreaking(t: number, dt: number, rng: Rng, s: MarketSettings
   }
 }
 
-function intervention(t: number, rng: Rng, s: MarketSettings, nextId: (p: string) => string): BreakingEvent {
+export function intervention(t: number, rng: Rng, s: MarketSettings, nextId: (p: string) => string): BreakingEvent {
   const size = rng.range(0.025, 0.045) * s.newsImpact;
   return {
     news: {

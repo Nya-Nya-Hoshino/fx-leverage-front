@@ -1,0 +1,50 @@
+{
+  "name": "fx-leverage-sim",
+  "version": "0.1.0",
+  "private": true,
+  "description": "杠杆战线 FX Leverage Front — 架空多AI驱动外汇保证金交易模拟游戏",
+  "type": "module",
+  "scripts": {
+    "dev": "concurrently -k -n server,client -c blue,magenta \"npm:dev:server\" \"npm:dev:client\"",
+    "dev:server": "node scripts/serve.mjs --watch",
+    "dev:client": "vite",
+    "build": "vite build",
+    "start": "node scripts/serve.mjs",
+    "test": "vitest run",
+    "typecheck": "tsc --noEmit -p tsconfig.json",
+    "demo": "tsx scripts/make-demo-save.ts",
+    "mock-llm": "tsx scripts/mock-llm.ts",
+    "build:mobile": "vite build --mode standalone",
+    "preview:mobile": "vite preview --mode standalone --port 4174 --strictPort",
+    "dist:desktop": "node scripts/build-desktop.mjs",
+    "dist:android": "node scripts/build-android.mjs"
+  },
+  "dependencies": {
+    "@capacitor/android": "^8.5.3",
+    "@capacitor/core": "^8.5.3",
+    "express": "^4.22.3",
+    "lightweight-charts": "^4.2.3",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "ws": "^8.22.1",
+    "zod": "^3.25.76",
+    "zustand": "^4.5.7"
+  },
+  "devDependencies": {
+    "@capacitor/cli": "^8.5.3",
+    "@types/express": "^4.17.25",
+    "@types/node": "^26.6.6",
+    "@types/react": "^18.3.31",
+    "@types/react-dom": "^18.3.7",
+    "@types/ws": "^8.18.2",
+    "@vitejs/plugin-react": "^4.7.0",
+    "concurrently": "^9.2.5",
+    "electron": "^44.9.0",
+    "electron-builder": "^26.17.0",
+    "esbuild": "^0.28.2",
+    "tsx": "^4.23.15",
+    "typescript": "^5.9.3",
+    "vite": "^6.4.5",
+    "vitest": "^3.2.7"
+  }
+}

@@ -1,0 +1,8 @@
+{
+  "appId": "com.fxleveragefront.game",
+  "appName": "杠杆战线",
+  "webDir": "dist-mobile",
+  "backgroundColor": "#070c18",
+  "android": { "allowMixedContent": false },
+  "plugins": { "CapacitorHttp": { "enabled": true } }
+}

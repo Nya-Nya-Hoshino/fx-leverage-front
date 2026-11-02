@@ -1,0 +1,15 @@
+node_modules/
+dist/
+data/*.db
+data/*.db-*
+data/.secret.key
+config/ai.local.json
+build/
+release/
+dist-mobile/
+android/local.properties
+android/app/build/
+android/build/
+android/.gradle/
+.claude/
+*.log

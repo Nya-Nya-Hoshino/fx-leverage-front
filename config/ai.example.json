@@ -1,0 +1,41 @@
+{
+  "_comment": "复制为 config/ai.local.json 并填写后重启服务，会自动导入为 AI 配置（按名称去重，Key 会被加密存入 data/）。也可以直接在游戏 设置 → AI 智能体 中添加。model 字段请填写你的服务商实际提供的模型名称。",
+  "profiles": [
+    {
+      "name": "OpenAI",
+      "provider": "openai",
+      "baseUrl": "https://api.openai.com/v1",
+      "apiKey": "sk-...",
+      "model": "<your-model-name>",
+      "maxTokens": 4000,
+      "timeoutMs": 90000,
+      "jsonMode": true,
+      "priceIn": 0,
+      "priceOut": 0,
+      "minIntervalMs": 3000,
+      "maxRetries": 2
+    },
+    {
+      "name": "Anthropic",
+      "provider": "anthropic",
+      "baseUrl": "https://api.anthropic.com",
+      "apiKey": "sk-ant-...",
+      "model": "claude-sonnet-5-5",
+      "maxTokens": 1500,
+      "timeoutMs": 60000,
+      "jsonMode": false,
+      "minIntervalMs": 3000,
+      "maxRetries": 2
+    },
+    {
+      "name": "Mock LLM (本地联调)",
+      "provider": "openai",
+      "baseUrl": "http://127.0.0.1:8790/v1",
+      "apiKey": "mock",
+      "model": "mock",
+      "jsonMode": false,
+      "minIntervalMs": 0,
+      "maxRetries": 0
+    }
+  ]
+}

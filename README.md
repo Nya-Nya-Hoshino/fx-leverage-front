@@ -4,6 +4,10 @@
 
 > ⚠️ 所有行情、新闻、经济数据均为虚拟生成，不连接任何真实交易所，不涉及真实资金。
 
+- 下载（Windows 安装版 / 免安装 ZIP / Android APK）：[Releases](https://github.com/Nya-Nya-Hoshino/fx-leverage-front/releases/latest)
+- 网站与网页版：[fx-leverage-front-site](https://github.com/Nya-Nya-Hoshino/fx-leverage-front-site)（GitHub Pages，`play/` 为浏览器内可玩版本）
+- 灵感来自漫画《FX戦士くるみちゃん》，与原作无关；不含任何原作素材。
+
 ## 一键启动
 
 | 系统 | 方式 |

@@ -4,13 +4,33 @@
   "copyright": "Fictional simulation game. No real money.",
   "electronVersion": "44.9.0",
   "electronDist": "node_modules/electron/dist",
-  "directories": { "app": "build/desktop-app", "output": "release", "buildResources": "build/icons" },
-  "files": ["**/*"],
+  "directories": {
+    "app": "build/desktop-app",
+    "output": "release",
+    "buildResources": "build/icons"
+  },
+  "files": [
+    "**/*",
+    "!node_modules/**"
+  ],
   "asar": true,
   "npmRebuild": false,
   "win": {
     "icon": "build/icons/icon.ico",
-    "target": [{ "target": "nsis", "arch": ["x64"] }, { "target": "portable", "arch": ["x64"] }]
+    "target": [
+      {
+        "target": "nsis",
+        "arch": [
+          "x64"
+        ]
+      },
+      {
+        "target": "portable",
+        "arch": [
+          "x64"
+        ]
+      }
+    ]
   },
   "nsis": {
     "oneClick": false,
@@ -19,5 +39,7 @@
     "shortcutName": "杠杆战线 FX Leverage Front",
     "artifactName": "FX-Leverage-Front-Setup-${version}.${ext}"
   },
-  "portable": { "artifactName": "FX-Leverage-Front-Portable-${version}.${ext}" }
+  "portable": {
+    "artifactName": "FX-Leverage-Front-Portable-${version}.${ext}"
+  }
 }

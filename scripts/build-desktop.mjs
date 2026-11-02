@@ -33,7 +33,9 @@ cpSync(join(ROOT, 'dist'), join(APP, 'web'), { recursive: true });
 cpSync(join(ROOT, 'build', 'icons', 'icon.png'), join(APP, 'icon.png'));
 writeFileSync(join(APP, 'package.json'), JSON.stringify({
   name: 'fx-leverage-front', productName: 'FX Leverage Front', version: pkg.version, description: pkg.description,
-  author: 'FX Leverage Front', main: 'main.mjs', type: 'module',
+  author: 'FX Leverage Front', main: 'main.mjs', type: 'module', dependencies: {},
 }, null, 2));
+// 服务端已打包为单文件：放一个空 node_modules，阻止 electron-builder 回退去收集项目根目录的依赖
+mkdirSync(join(APP, 'node_modules'), { recursive: true });
 
 run('npx electron-builder --win --config electron-builder.json');

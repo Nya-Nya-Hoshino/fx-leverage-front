@@ -2,7 +2,8 @@
 
 export type Ccy =
   | 'USD' | 'JPY' | 'EUR' | 'GBP' | 'CHF' | 'AUD' | 'NZD' | 'CAD'
-  | 'CNH' | 'HKD' | 'TWD' | 'KRW' | 'SGD';
+  | 'CNH' | 'HKD' | 'TWD' | 'KRW' | 'SGD'
+  | 'TRY' | 'ZAR' | 'MXN';
 
 /** 账户本位币。CNY 账户在行情侧使用离岸人民币 CNH 汇率进行换算。 */
 export type AccountCcy = 'JPY' | 'CNY';

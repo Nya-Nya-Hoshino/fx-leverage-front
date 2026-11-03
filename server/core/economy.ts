@@ -2,7 +2,7 @@
 // 因果顺序：先由经济状态 + 随机数决定数据结果 → 计算市场冲击并施加 → 同时发布新闻。
 // 新闻永远描述“导致”行情的事件，而不是事后为已发生的价格走势编造理由。
 import type { CalendarEvent, Ccy, I18nText, IndicatorKind, MarketSettings, NewsItem } from '../../shared/types';
-import { CCY_INFO } from '../../shared/instruments';
+import { CCY_INFO, EM_CCYS } from '../../shared/instruments';
 import { Rng } from './rng';
 import { isMarketOpen } from './clock';
 
@@ -33,6 +33,7 @@ export const ECON_NAME: Record<Ccy, I18nText> = {
   NZD: { zh: '新西兰', ja: 'NZ' }, CAD: { zh: '加拿大', ja: 'カナダ' }, CNH: { zh: '中国', ja: '中国' },
   HKD: { zh: '香港', ja: '香港' }, TWD: { zh: '台湾', ja: '台湾' }, KRW: { zh: '韩国', ja: '韓国' },
   SGD: { zh: '新加坡', ja: 'シンガポール' },
+  TRY: { zh: '土耳其', ja: 'トルコ' }, ZAR: { zh: '南非', ja: '南アフリカ' }, MXN: { zh: '墨西哥', ja: 'メキシコ' },
 };
 
 export const CB_NAME: Record<Ccy, I18nText> = {
@@ -41,6 +42,7 @@ export const CB_NAME: Record<Ccy, I18nText> = {
   NZD: { zh: '新西兰联储', ja: 'RBNZ' }, CAD: { zh: '加拿大央行', ja: 'カナダ中銀' }, CNH: { zh: '中国人民银行', ja: '人民銀行' },
   HKD: { zh: '香港金管局', ja: 'HKMA' }, TWD: { zh: '台湾央行', ja: '台湾中銀' }, KRW: { zh: '韩国央行', ja: '韓国銀行' },
   SGD: { zh: '新加坡金管局', ja: 'MAS' },
+  TRY: { zh: '土耳其央行', ja: 'トルコ中銀' }, ZAR: { zh: '南非储备银行', ja: '南ア準備銀行' }, MXN: { zh: '墨西哥央行', ja: 'メキシコ中銀' },
 };
 
 interface Spec { name: I18nText; unit: string; sd: number; dir: 1 | -1; dp: number }
@@ -58,26 +60,28 @@ export const SPEC: Record<IndicatorKind, Spec> = {
 
 const MAJORS: Ccy[] = ['USD', 'EUR', 'JPY', 'GBP', 'AUD', 'NZD', 'CAD', 'CHF'];
 const DATA_HOUR: Record<Ccy, number> = {
-  USD: 13.5, EUR: 10, JPY: 23.83, GBP: 7, AUD: 0.5, NZD: 22.75, CAD: 13.5, CHF: 7.5, CNH: 1.5, HKD: 8.5, TWD: 8, KRW: 23, SGD: 5,
+  USD: 13.5, EUR: 10, JPY: 23.83, GBP: 7, AUD: 0.5, NZD: 22.75, CAD: 13.5, CHF: 7.5, CNH: 1.5, HKD: 8.5, TWD: 8, KRW: 23, SGD: 5, TRY: 7, ZAR: 9.5, MXN: 13,
 };
 const RATE_HOUR: Record<Ccy, number> = {
-  USD: 19, EUR: 12.25, JPY: 3, GBP: 12, AUD: 3.5, NZD: 1, CAD: 14.75, CHF: 8.5, CNH: 1.25, HKD: 19.5, TWD: 8.5, KRW: 1, SGD: 1,
+  USD: 19, EUR: 12.25, JPY: 3, GBP: 12, AUD: 3.5, NZD: 1, CAD: 14.75, CHF: 8.5, CNH: 1.25, HKD: 19.5, TWD: 8.5, KRW: 1, SGD: 1, TRY: 11, ZAR: 13, MXN: 19,
 };
-const DAILY_PROB: Partial<Record<Ccy, number>> = { USD: 0.85, EUR: 0.6, JPY: 0.55, GBP: 0.5, AUD: 0.5, NZD: 0.35, CAD: 0.4, CHF: 0.3, CNH: 0.35 };
+const DAILY_PROB: Partial<Record<Ccy, number>> = { USD: 0.85, EUR: 0.6, JPY: 0.55, GBP: 0.5, AUD: 0.5, NZD: 0.35, CAD: 0.4, CHF: 0.3, CNH: 0.35, TRY: 0.35, ZAR: 0.3, MXN: 0.3 };
 const INFL_TARGET = 2;
 
 function kindsFor(c: Ccy): IndicatorKind[] {
   if (c === 'USD') return ['CPI', 'NFP', 'UNEMP', 'GDP', 'PMI', 'RETAIL', 'SENTI'];
   if (MAJORS.includes(c)) return ['CPI', 'UNEMP', 'GDP', 'PMI', 'RETAIL', 'SENTI'];
   if (c === 'CNH') return ['CPI', 'GDP', 'PMI', 'TRADE'];
+  if (EM_CCYS.includes(c)) return ['CPI', 'GDP', 'TRADE', 'UNEMP'];
   return ['CPI', 'TRADE'];
 }
 
 function importanceOf(c: Ccy, k: IndicatorKind): 1 | 2 | 3 {
-  if (k === 'RATE') return MAJORS.includes(c) ? 3 : 2;
+  if (k === 'RATE') return MAJORS.includes(c) || EM_CCYS.includes(c) ? 3 : 2;
+  if (EM_CCYS.includes(c) && k === 'CPI') return 3;
   if (k === 'NFP') return 3;
   if (k === 'CPI' && ['USD', 'EUR', 'JPY', 'GBP'].includes(c)) return 3;
-  if (!MAJORS.includes(c) && c !== 'CNH') return 1;
+  if (!MAJORS.includes(c) && c !== 'CNH' && !EM_CCYS.includes(c)) return 1;
   if (k === 'SENTI' || k === 'TRADE') return 1;
   return 2;
 }
@@ -309,7 +313,7 @@ export function maybeBreaking(t: number, dt: number, rng: Rng, s: MarketSettings
   // 为汇率干预单独计算：美日高于 158 后干预概率上升
   if (usdjpy > 158 && rng.chance(0.02 * (usdjpy - 158) * dt / 3600)) return intervention(t, rng, s, nextId);
   if (!rng.chance(hourly * dt / 3600)) return null;
-  const k = rng.pick(['riskoff', 'riskon', 'cbtalk', 'commodity', 'politics'] as const);
+  const k = rng.pick(['riskoff', 'riskon', 'cbtalk', 'commodity', 'politics', 'em', 'em'] as const);
   const imp = s.newsImpact;
   const mk = (title: I18nText, body: I18nText, ccys: Ccy[], importance: 1 | 2 | 3): NewsItem =>
     ({ id: nextId('n'), t, kind: 'breaking', title, body, ccys, importance, source: 'local' });
@@ -360,6 +364,26 @@ export function maybeBreaking(t: number, dt: number, rng: Rng, s: MarketSettings
         ],
       };
     }
+    case 'em': {
+      const c = rng.pick(EM_CCYS);
+      const en = ECON_NAME[c], cb = CB_NAME[c], cn = CCY_INFO[c].name;
+      const up = rng.chance(0.35);
+      const size = (up ? 1 : -1) * rng.range(0.012, 0.045) * imp;
+      const why: Record<string, [I18nText, I18nText]> = {
+        TRY: [{ zh: `${cb.zh}行长被突然撤换，市场质疑央行独立性`, ja: `${cb.ja}総裁が突然解任、中銀の独立性に疑問` }, { zh: `${cb.zh}意外大幅加息，远超市场预期`, ja: `${cb.ja}が予想外の大幅利上げ` }],
+        ZAR: [{ zh: `${en.zh}全国大面积停电升级，主权评级遭下调`, ja: `${en.ja}で大規模停電が拡大、格付け引き下げ` }, { zh: '贵金属价格飙升，资源货币兰特获强劲买盘', ja: '貴金属が急騰、資源通貨ランドに買い' }],
+        MXN: [{ zh: `美国威胁对${en.zh}商品加征高额关税`, ja: `米国が${en.ja}製品への高関税を示唆` }, { zh: `${en.zh}与美国达成贸易与移民协议`, ja: `${en.ja}と米国が通商・移民で合意` }],
+      };
+      const [bad, good] = why[c];
+      const head = up ? good : bad;
+      return {
+        news: mk({ zh: `【突发】${head.zh}`, ja: `【速報】${head.ja}` },
+          { zh: `新兴市场货币${cn.zh}${up ? '急升' : '暴跌'}，流动性骤降，点差大幅扩大，高息套息交易面临剧烈波动。`, ja: `新興国通貨${cn.ja}が${up ? '急騰' : '急落'}。流動性が急低下しスプレッドが大きく拡大、高金利キャリートレードが大きく揺さぶられる。` },
+          [c], 3),
+        shocks: [{ ccy: c, size, immediate: 0.65, duration: 900, vol: 2.2, spread: 6 }],
+        regime: up ? undefined : 'illiquid',
+      };
+    }
     case 'politics': {
       const c = rng.pick(['EUR', 'GBP'] as Ccy[]);
       const size = -rng.range(0.003, 0.009) * imp;
@@ -388,7 +412,7 @@ export function intervention(t: number, rng: Rng, s: MarketSettings, nextId: (p:
 }
 
 function blackSwan(t: number, rng: Rng, s: MarketSettings, nextId: (p: string) => string): BreakingEvent {
-  const c = rng.pick(['GBP', 'JPY', 'CHF', 'AUD', 'NZD', 'EUR', 'USD'] as Ccy[]);
+  const c = rng.pick(['GBP', 'JPY', 'CHF', 'AUD', 'NZD', 'EUR', 'USD', 'TRY', 'ZAR', 'MXN'] as Ccy[]);
   const dir = c === 'JPY' || c === 'CHF' ? rng.chance(0.7) ? 1 : -1 : rng.chance(0.8) ? -1 : 1;
   const size = dir * rng.range(0.02, 0.06);
   const cn = CCY_INFO[c].name;

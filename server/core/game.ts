@@ -3,7 +3,7 @@
 import type {
   AccountCcy, AccountSummary, AiLogEntry, Ccy, I18nText, MarketMode, NewsItem, Notice, Quote, TradeRecord,
 } from '../../shared/types';
-import { PAIRS, INITIAL_CAPITAL } from '../../shared/instruments';
+import { PAIRS, INITIAL_CAPITAL, CCYS } from '../../shared/instruments';
 import { Rng } from './rng';
 import { CandleStore } from './candles';
 import { START_T, isMarketOpen, nextClose, nextOpen, rolloversBetween } from './clock';
@@ -133,10 +133,22 @@ export class Game implements ExecCtx {
   }
 
   static restore(st: GameState, closed: { sym: string; tf: any; c: any }[]): Game {
+    Game.migrate(st);
     const g = new Game(st);
     g.candles.restore(closed, st.forming ?? {});
     g.refreshQuotes();
     return g;
+  }
+
+  /** 旧存档兼容：补齐后来新增的货币（行情因子与经济状态），不改变已有货币的任何数值 */
+  static migrate(st: GameState) {
+    const missing = CCYS.filter((c) => !st.market.f[c] || !st.economy.econ[c]);
+    if (!missing.length) return;
+    const fresh = initEconomy(Rng.fromSeed((st.seed ^ 0x9e3779b9) >>> 0), st.clock.t);
+    for (const c of missing) {
+      st.market.f[c] ??= { x: 0, v: 1, trend: 0, anchor: 0, macroDrift: 0, macroVol: 1, volBoost: 0, spreadBoost: 0 };
+      st.economy.econ[c] ??= fresh.econ[c];
+    }
   }
 
   serialize(): GameState {

@@ -40,7 +40,8 @@ const Row = memo(function Row({ q, active, onClick, featured, held, rev }: { q: 
   );
 });
 
-type Group = 'all' | 'major' | 'jpy' | 'usd' | 'cross';
+type Group = 'all' | 'major' | 'jpy' | 'usd' | 'cross' | 'em';
+const EM = ['TRY', 'ZAR', 'MXN'];
 
 export default function RateBoard() {
   const t = useT();
@@ -60,9 +61,10 @@ export default function RateBoard() {
     if (g === 'jpy') return q.sym.endsWith('JPY');
     if (g === 'usd') return q.sym.includes('USD');
     if (g === 'cross') return !q.sym.includes('USD');
+    if (g === 'em') return EM.some((c) => q.sym.includes(c));
     return true;
   });
-  const groups: [Group, string][] = [['all', t('全部', 'すべて')], ['major', t('主要', '主要')], ['jpy', t('日元', '円')], ['usd', t('美元', 'ドル')], ['cross', t('交叉', 'クロス')]];
+  const groups: [Group, string][] = [['all', t('全部', 'すべて')], ['major', t('主要', '主要')], ['jpy', t('日元', '円')], ['usd', t('美元', 'ドル')], ['cross', t('交叉', 'クロス')], ['em', t('新兴', '新興国')]];
   return (
     <div className="panel rateboard">
       <div className="panel-head">

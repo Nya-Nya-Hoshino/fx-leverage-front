@@ -119,7 +119,9 @@ export function conv(up: Record<Ccy, number>, from: Ccy, to: Ccy): number {
 export function spreadPips(ms: MarketState, p: PairDef, t: number, s: MarketSettings): number {
   const reg = REGIME_PARAMS[ms.regime.kind];
   const boost = Math.max(ms.f[p.base].spreadBoost, ms.f[p.quote].spreadBoost);
-  const sess = s.sessionEffects ? sessionSpread(t) : 1;
+  let sess = s.sessionEffects ? sessionSpread(t) : 1;
+  const liq = Math.max(CCY_INFO[p.base].spreadLiq ?? 1, CCY_INFO[p.quote].spreadLiq ?? 1);
+  if (liq > 1 && (sess > 1.5 || ms.regime.kind === 'panic' || ms.regime.kind === 'illiquid')) sess *= liq; // 仅在换日前后/恐慌/流动性枯竭时额外放大
   const raw = p.baseSpread * s.spreadMult * sess * reg.spread * (1 + boost) * (1 + ms.reopenSpread);
   return Math.min(raw, p.baseSpread * 400);
 }
@@ -198,7 +200,7 @@ export function stepMarket(ms: MarketState, dt: number, t: number, rng: Rng, s: 
     // 随机趋势 OU（时间尺度约 2 天）
     fc.trend += -fc.trend * Math.min(1, dt / (2 * 86400)) + rng.normal() * 0.35 * s.trendStrength * Math.sqrt(dt / 86400);
 
-    let drift = fc.trend * s.trendStrength + fc.macroDrift + info.risk * ms.risk * 1.2;
+    let drift = fc.trend * s.trendStrength + fc.macroDrift + info.risk * ms.risk * 1.2 + (info.drift ?? 0);
     if (ms.regime.kind === 'trend' && ms.regime.focus === c) drift += ms.regime.mag * s.trendStrength;
     // 均值回归：锚点为 x 的慢速移动平均
     const kappa = 3 * reg.kappa * s.meanReversion * (c === 'HKD' ? 400 : 1);
@@ -208,9 +210,10 @@ export function stepMarket(ms: MarketState, dt: number, t: number, rng: Rng, s: 
 
     let dx = drift * dtY + sigma * sq * eps;
     // 小幅跳跃（泊松）
-    const lambda = 2 * s.jumpRate * reg.jump * (dt / 86400);
+    const jm = info.jump ?? 1;
+    const lambda = 2 * s.jumpRate * reg.jump * jm * (dt / 86400);
     if (rng.chance(lambda)) {
-      const size = rng.exp(0.0006) * info.sigma / 0.07 * s.volMult;
+      const size = rng.exp(0.0006) * info.sigma / 0.07 * s.volMult * Math.sqrt(jm);
       dx += rng.sign() * size;
     }
     dx += shockApply[c] ?? 0;

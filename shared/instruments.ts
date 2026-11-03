@@ -1,6 +1,8 @@
 import type { AccountCcy, Ccy, PairDef } from './types';
 
-export const CCYS: Ccy[] = ['USD', 'JPY', 'EUR', 'GBP', 'CHF', 'AUD', 'NZD', 'CAD', 'CNH', 'HKD', 'TWD', 'KRW', 'SGD'];
+export const CCYS: Ccy[] = ['USD', 'JPY', 'EUR', 'GBP', 'CHF', 'AUD', 'NZD', 'CAD', 'CNH', 'HKD', 'TWD', 'KRW', 'SGD', 'TRY', 'ZAR', 'MXN'];
+/** 新兴市场货币：高息、高波动、低流动性 */
+export const EM_CCYS: Ccy[] = ['TRY', 'ZAR', 'MXN'];
 
 export interface CcyInfo {
   name: { zh: string; ja: string };
@@ -11,22 +13,28 @@ export interface CcyInfo {
   euro: number;       // 欧洲区块因子载荷
   region: 'asia' | 'europe' | 'america' | 'oceania';
   rate: number;       // 初始政策利率 %
+  jump?: number;      // 跳跃频率/幅度倍数（默认 1）：数值越大越“无厘头”
+  drift?: number;     // 长期结构性漂移（年化对数，如里拉长期贬值）
+  spreadLiq?: number; // 流动性差时（亚洲时段/恐慌）点差额外放大倍数
 }
 
 export const CCY_INFO: Record<Ccy, CcyInfo> = {
   USD: { name: { zh: '美元', ja: '米ドル' }, usdPer: 1, sigma: 0.065, peg: 0, risk: -0.15, euro: 0, region: 'america', rate: 4.25 },
   JPY: { name: { zh: '日元', ja: '円' }, usdPer: 1 / 150, sigma: 0.075, peg: 0, risk: -0.45, euro: 0, region: 'asia', rate: 0.75 },
   EUR: { name: { zh: '欧元', ja: 'ユーロ' }, usdPer: 1.08, sigma: 0.055, peg: 0, risk: 0.1, euro: 0.45, region: 'europe', rate: 2.5 },
-  GBP: { name: { zh: '英镑', ja: '英ポンド' }, usdPer: 1.27, sigma: 0.07, peg: 0, risk: 0.15, euro: 0.3, region: 'europe', rate: 4.0 },
+  GBP: { name: { zh: '英镑', ja: '英ポンド' }, usdPer: 1.27, sigma: 0.075, peg: 0, risk: 0.15, euro: 0.3, region: 'europe', rate: 4.0, jump: 1.6 },
   CHF: { name: { zh: '瑞郎', ja: 'スイスフラン' }, usdPer: 1 / 0.88, sigma: 0.06, peg: 0, risk: -0.35, euro: 0.45, region: 'europe', rate: 0.5 },
-  AUD: { name: { zh: '澳元', ja: '豪ドル' }, usdPer: 0.66, sigma: 0.085, peg: 0, risk: 0.5, euro: 0, region: 'oceania', rate: 3.85 },
-  NZD: { name: { zh: '纽元', ja: 'NZドル' }, usdPer: 0.6, sigma: 0.09, peg: 0, risk: 0.5, euro: 0, region: 'oceania', rate: 3.5 },
+  AUD: { name: { zh: '澳元', ja: '豪ドル' }, usdPer: 0.66, sigma: 0.09, peg: 0, risk: 0.55, euro: 0, region: 'oceania', rate: 3.85, jump: 1.8 },
+  NZD: { name: { zh: '纽元', ja: 'NZドル' }, usdPer: 0.6, sigma: 0.095, peg: 0, risk: 0.55, euro: 0, region: 'oceania', rate: 3.5, jump: 1.8 },
   CAD: { name: { zh: '加元', ja: 'カナダドル' }, usdPer: 1 / 1.36, sigma: 0.06, peg: 0, risk: 0.3, euro: 0, region: 'america', rate: 2.75 },
   CNH: { name: { zh: '离岸人民币', ja: '人民元' }, usdPer: 1 / 7.2, sigma: 0.025, peg: 0.85, risk: 0.1, euro: 0, region: 'asia', rate: 1.5 },
   HKD: { name: { zh: '港元', ja: '香港ドル' }, usdPer: 1 / 7.8, sigma: 0.003, peg: 1, risk: 0, euro: 0, region: 'asia', rate: 4.25 },
   TWD: { name: { zh: '新台币', ja: '台湾ドル' }, usdPer: 1 / 32, sigma: 0.035, peg: 0.5, risk: 0.25, euro: 0, region: 'asia', rate: 2.0 },
   KRW: { name: { zh: '韩元', ja: '韓国ウォン' }, usdPer: 1 / 1350, sigma: 0.06, peg: 0.25, risk: 0.4, euro: 0, region: 'asia', rate: 2.5 },
   SGD: { name: { zh: '新加坡元', ja: 'シンガポールドル' }, usdPer: 1 / 1.34, sigma: 0.035, peg: 0.4, risk: 0.15, euro: 0, region: 'asia', rate: 2.5 },
+  TRY: { name: { zh: '土耳其里拉', ja: 'トルコリラ' }, usdPer: 1 / 38, sigma: 0.15, peg: 0, risk: 0.3, euro: 0.1, region: 'europe', rate: 32, jump: 3.5, drift: -0.28, spreadLiq: 2.5 },
+  ZAR: { name: { zh: '南非兰特', ja: '南アフリカランド' }, usdPer: 1 / 18.2, sigma: 0.16, peg: 0, risk: 0.6, euro: 0, region: 'europe', rate: 7.25, jump: 2.6, drift: -0.04, spreadLiq: 2.2 },
+  MXN: { name: { zh: '墨西哥比索', ja: 'メキシコペソ' }, usdPer: 1 / 18.8, sigma: 0.13, peg: 0, risk: 0.55, euro: 0, region: 'america', rate: 8.5, jump: 2.2, drift: -0.02, spreadLiq: 1.8 },
 };
 
 function p(sym: string, base: Ccy, quote: Ccy, pip: number, digits: number, baseSpread: number, featured = false): PairDef {
@@ -51,6 +59,7 @@ export const PAIRS: PairDef[] = [
   p('EURAUD', 'EUR', 'AUD', 0.0001, 5, 1.0),
   p('EURCHF', 'EUR', 'CHF', 0.0001, 5, 1.0),
   p('GBPAUD', 'GBP', 'AUD', 0.0001, 5, 1.6),
+  p('GBPNZD', 'GBP', 'NZD', 0.0001, 5, 2.4),
   p('USDCNH', 'USD', 'CNH', 0.0001, 5, 3.0),
   p('CNHJPY', 'CNH', 'JPY', 0.001, 4, 0.6),
   p('USDHKD', 'USD', 'HKD', 0.0001, 5, 3.0),
@@ -58,6 +67,12 @@ export const PAIRS: PairDef[] = [
   p('USDSGD', 'USD', 'SGD', 0.0001, 5, 2.0),
   p('USDKRW', 'USD', 'KRW', 0.1, 2, 8.0),
   p('USDTWD', 'USD', 'TWD', 0.001, 4, 15.0),
+  p('USDTRY', 'USD', 'TRY', 0.0001, 5, 90),
+  p('USDZAR', 'USD', 'ZAR', 0.0001, 5, 75),
+  p('USDMXN', 'USD', 'MXN', 0.0001, 5, 45),
+  p('TRYJPY', 'TRY', 'JPY', 0.01, 3, 1.6),
+  p('ZARJPY', 'ZAR', 'JPY', 0.01, 3, 1.0),
+  p('MXNJPY', 'MXN', 'JPY', 0.01, 3, 0.4),
 ];
 
 export const PAIR_MAP: Record<string, PairDef> = Object.fromEntries(PAIRS.map((x) => [x.sym, x]));
